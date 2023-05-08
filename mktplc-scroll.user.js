@@ -4,7 +4,7 @@
 // @version      0.1
 // @description  try to take over the world!
 // @author       Alexo
-// @match        https://marketplace.tf
+// @match        https://marketplace.tf/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=marketplace.tf
 // @grant        none
 // ==/UserScript==
