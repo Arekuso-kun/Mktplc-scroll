@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Mktplc scroll
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.3
 // @description  try to take over the world!
 // @author       Alexo
 // @match        https://marketplace.tf/*
@@ -12,7 +12,6 @@
 (function () {
     'use strict';
 
-    // Create button element
     var button = document.createElement('button');
     button.textContent = 'Scroll off';
     button.setAttribute('type', 'button');
@@ -23,13 +22,58 @@
     button.style.top = '12.65px';
     button.style.zIndex = '9999';
 
-    // Append button to document body
     document.body.appendChild(button);
+    updateScrollText();
+
+    const containerElement = document.createElement('div');
+    containerElement.style.position = 'fixed';
+    containerElement.style.right = '20px';
+    containerElement.style.top = `${button.offsetTop + button.offsetHeight + 12.65 * 2}px`; // Adjust the offset as needed
+    containerElement.style.zIndex = '9999';
+    containerElement.style.display = 'flex';
+    containerElement.style.alignItems = 'center';
+    containerElement.style.gap = '5px';
+
+    const textElement = document.createElement('span');
+    textElement.setAttribute('id', 'statusText');
+    textElement.textContent = 'Status:';
+
+    const iconElement = document.createElement('i');
+    iconElement.setAttribute('id', 'statusIcon');
+    iconElement.classList.add('fa', 'fa-lg', 'fa-circle');
+
+    containerElement.appendChild(textElement);
+    containerElement.appendChild(iconElement);
+    document.body.appendChild(containerElement);
+
+    var status = localStorage.getItem('status');
+    if (status === null) {
+        status = false; // Set your desired default value here
+    } else {
+        status = JSON.parse(status); // Parse the stored value
+    }
+
+    function updateStatusColor() {
+        iconElement.style.color = status ? 'green' : 'red';
+    }
+
+    var button_status = document.createElement('button');
+    button_status.textContent = 'Auto scroll';
+    button_status.setAttribute('type', 'button');
+    button_status.setAttribute('id', 'toggleButton');
+    button_status.classList.add('btn', 'btn-primary', 'btn-sm');
+    button_status.style.position = 'fixed';
+    button_status.style.right = '12.65px';
+    button_status.style.top = `${containerElement.offsetTop + containerElement.offsetHeight + 12.65}px`; // Adjust the offset as needed
+    button_status.style.zIndex = '9999';
+
+    document.body.appendChild(button_status);
+    updateStatusColor();
 
     var button_open_tabs = document.createElement('button');
     button_open_tabs.textContent = 'Open tabs';
     button_open_tabs.setAttribute('type', 'button');
-    button_open_tabs.setAttribute('id', 'scroll');
+    button_open_tabs.setAttribute('id', 'openTabs');
     button_open_tabs.classList.add("btn", "btn-primary", "btn-sm");
     button_open_tabs.style.position = 'fixed';
     button_open_tabs.style.left = '12.65px';
@@ -38,100 +82,77 @@
 
     document.body.appendChild(button_open_tabs);
 
-    // Set initial scrolling state
     var isScrolling = false;
     var scrollInterval = null;
+    var timePassed = 0, maxTimePassed = 5000, maxHeight = 400000;
+    const urls = [
+        'https://marketplace.tf/shop/76561198262010565',
+        'https://marketplace.tf/shop/76561198213990679',
+        'https://marketplace.tf/shop/76561198814850950',
+        'https://marketplace.tf/shop/76561198272920071',
+        'https://marketplace.tf/shop/76561198333341262',
+        'https://marketplace.tf/shop/76561198219409524',
+        'https://marketplace.tf/browse/tf2?ssortfield=popularity',
+        'https://stntrading.eu/buy/unusuals/17',
+        'https://stntrading.eu/buy/unusuals/107'
+    ];
 
-    async function processURLs() {
-        const urls = [
-            'https://marketplace.tf/shop/76561198262010565',
-            'https://marketplace.tf/shop/76561198213990679',
-            'https://marketplace.tf/shop/76561198814850950',
-            'https://marketplace.tf/shop/76561198272920071',
-            'https://marketplace.tf/shop/76561198333341262',
-            'https://marketplace.tf/shop/76561198219409524',
-            'https://marketplace.tf/browse/tf2?ssortfield=popularity'
-        ];
-
-        const urls_unusuals = [
-            'https://stntrading.eu/buy/unusuals/17',
-            'https://stntrading.eu/buy/unusuals/107'
-        ];
-
-        for (const url of urls) {
-            await processURL(url);
-        }
-
-        for (const url of urls_unusuals) {
-            window.open(url, '_blank');
-        }
+    const currentLink = window.location.href;
+    if(urls.includes(currentLink) && status) {
+        toggleScroll();
     }
 
-    async function processURL(url) {
-        return new Promise((resolve) => {
-            // Open a new tab and get a reference to it
-            const newTab = window.open(url, '_blank');
-            let timePassed = 0;
-            const interval = 1000;
-
-            // Wait for the new tab to finish loading
-            newTab.addEventListener('load', () => {
-                // Function to scroll the new tab to the bottom
-                function scrollToBottom() {
-                    newTab.scrollBy(0, newTab.document.body.scrollHeight);
-                }
-
-                // Function to check if the new tab's height has changed
-                function hasTabHeightChanged() {
-                    return newTab.document.body.scrollHeight !== hasTabHeightChanged.previousHeight;
-                }
-                hasTabHeightChanged.previousHeight = 0;
-
-                // Start scrolling to the bottom and check if the height changes
-                const scrollInterval = setInterval(() => {
-                    scrollToBottom();
-                    timePassed += interval;
-
-                    if ((!hasTabHeightChanged() && timePassed > 2500) || newTab.document.body.scrollHeight > 400000) {
-                        clearInterval(scrollInterval);
-                        resolve();
-                    }
-                    if (hasTabHeightChanged()) {
-                        timePassed = 0;
-                    }
-
-                    hasTabHeightChanged.previousHeight = newTab.document.body.scrollHeight;
-                }, interval);
-            });
-        });
+    function updateScrollText() {
+        button.textContent = isScrolling ? `${timePassed/1000}/${maxTimePassed/1000} sec | Height: ${document.body.scrollHeight}/${maxHeight/1000}k` : 'Scroll: off';
     }
 
-    // Function to start or stop scrolling
     function toggleScroll() {
         if (isScrolling) {
-            // Stop scrolling
             clearInterval(scrollInterval);
-            button.textContent = 'Scroll off';
             isScrolling = false;
         } else {
-            // Start scrolling
+            var previousHeight = 0, interval = 1000;
+            timePassed = 0;
+
+            function hasHeightChanged() {
+                return document.body.scrollHeight !== previousHeight;
+            }
+
             scrollInterval = setInterval(function () {
-                if (document.body.scrollHeight > 400000) {
-                    // Stop scrolling if body height exceeds 400000
+                if ((!hasHeightChanged() && timePassed >= maxTimePassed) || document.body.scrollHeight > maxHeight) {
                     clearInterval(scrollInterval);
-                    button.textContent = 'Scroll off';
                     isScrolling = false;
-                } else {
-                    window.scrollBy(0, document.body.scrollHeight);
+                    updateScrollText();
                 }
-            }, 1000); // Adjust scroll speed as needed
-            button.textContent = 'Scroll on';
+                if (hasHeightChanged()) {
+                    timePassed = 0;
+                }
+                if (!document.hidden) {
+                    timePassed += interval;
+                }
+                window.scrollBy(0, document.body.scrollHeight);
+                previousHeight = document.body.scrollHeight;
+                updateScrollText();
+            }, interval);
+
             isScrolling = true;
+        }
+        updateScrollText();
+    }
+
+    function openTabs() {
+        for (const url of urls) {
+            window.open(url);
         }
     }
 
-    // Add click event listener to button
-    button.addEventListener('click', toggleScroll);
-    button_open_tabs.addEventListener('click', processURLs);
+    function toggleStatus() {
+        status = !status;
+        localStorage.setItem('status', JSON.stringify(status)); // Store the updated value
+        updateStatusColor();
+    }
 
+    button.addEventListener('click', toggleScroll);
+    button_open_tabs.addEventListener('click', openTabs);
+    button_status.addEventListener('click', toggleStatus);
 })();
