@@ -4,6 +4,8 @@
 // @version      0.3
 // @description  try to take over the world!
 // @author       Alexo
+// @downloadURL  https://github.com/Arekuso-kun/Mktplc-scroll/raw/main/mktplc-scroll.user.js
+// @updateURL    https://github.com/Arekuso-kun/Mktplc-scroll/raw/main/mktplc-scroll.user.js
 // @match        https://marketplace.tf/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=marketplace.tf
 // @grant        none
